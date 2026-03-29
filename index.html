@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Weeraratne–Ricks Transplant Allocation Calculator</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #ffffff;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #69c771;
+            border-left: 5px solid #4caf50;
+            border-radius: 6px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Weeraratne–Ricks Transplant Allocation Calculator</h1>
+
+        <!-- Inputs in the correct order -->
+        <label for="A">Age (A)</label>
+        <input type="number" step="1" id="A" placeholder="e.g. 10">
+
+        <label for="D">Number of Dependents (D)</label>
+        <input type="number" step="1" id="D" placeholder="e.g. 3">
+
+        <label for="a_list">Ages of Dependents (a, comma-separated)</label>
+        <input type="text" id="a_list" placeholder="e.g. 5, 12, 3">
+
+        <label for="S">Success Probability (S, 0–100)</label>
+        <input type="number" step="0.1" id="S" placeholder="e.g. 95">
+
+        <label for="S_prev">Previous Success Probability (S′, 0–100)</label>
+        <input type="number" step="0.1" id="S_prev" value="0">
+
+        <label for="n">Number of Previous Transplants (n)</label>
+        <input type="number" step="1" id="n" value="0">
+
+        <label for="R">Lifestyle Risk (R, 0–20)</label>
+        <input type="number" step="0.1" id="R" value="0">
+
+        <label for="Q">Quality of Life After Transplant (Q, 0.0–1.0)</label>
+        <input type="number" step="0.01" id="Q" value="1.0">
+
+        <label for="L">Expected Years of Life Post-Transplant (L)</label>
+        <input type="number" step="0.1" id="L" placeholder="e.g. 25">
+
+        <label for="C">Critical Need Factor (C, 1.0-2.0)</label>
+        <input type="number" step="0.1" id="C" value="1.0">
+
+        <button onclick="calculateScore()">Calculate Score</button>
+
+        <div id="result" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+                function wr_allocation_score(D, a, S, S_prev, n, R, Q, L, C, A) {
+
+            // dependent term: (D / log(a+2)) / 2 + 1
+            const dependent_term = ((D / Math.log10(a + 2)) / 2) + 1;
+
+            // step 1: ((S + S')/(n+1)) - R
+            const step1 = ((S + S_prev) / (n + 1)) - R;
+
+            // step 2: divide by 100
+            const step2 = step1 / 100;
+
+            // step 3: multiply by QLC
+            const step3 = step2 * Q * L * C;
+
+            // denominator: 0.01|25 - A| + 1
+            const denominator = (0.01 * Math.abs(25 - A)) + 1;
+
+            // step 4: divide by denominator
+            const step4 = step3 / denominator;
+
+            // step 5: multiply by dependent term
+            const raw_score = dependent_term * step4;
+
+            return Math.max(0, raw_score);
+        }
+        
+        function calculateScore() {
+            const A = parseFloat(document.getElementById("A").value) || 0;
+            const D = parseFloat(document.getElementById("D").value) || 0;
+            // Get comma-separated ages and compute the mean
+            const a_list_raw = document.getElementById("a_list").value.trim();
+                let a = 0;
+                if (a_list_raw.length > 0) {
+                    const nums = a_list_raw
+                        .split(",")
+                        .map(x => parseFloat(x.trim()))
+                        .filter(x => !isNaN(x));
+
+                    if (nums.length > 0) {
+                        a = nums.reduce((sum, val) => sum + val, 0) / nums.length;
+                    }
+                }
+            const S = parseFloat(document.getElementById("S").value) || 0;
+            const S_prev = parseFloat(document.getElementById("S_prev").value) || 0;
+            const n = parseFloat(document.getElementById("n").value) || 0;
+            const R = parseFloat(document.getElementById("R").value) || 0;
+            const Q = parseFloat(document.getElementById("Q").value) || 0;
+            const L = parseFloat(document.getElementById("L").value) || 0;
+            const C = parseFloat(document.getElementById("C").value) || 1;
+
+            const score = wr_allocation_score(D, a, S, S_prev, n, R, Q, L, C, A);
+
+            const resultBox = document.getElementById("result");
+            resultBox.style.display = "block";
+            resultBox.innerHTML = `<strong>Your Weeraratne–Ricks Score:</strong> ${score.toFixed(4)}`;
+        }
+
+    </script>
+
+<div class="container" style="margin-top: 40px; font-size: 14px;">
+
+    <h2 style="margin-bottom: 10px;">Reference Tables</h2>
+
+    <style>
+        .ref-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+            font-size: 13px;
+        }
+        .ref-table th {
+            background: #f0f0f0;
+            padding: 6px;
+            text-align: left;
+            border-bottom: 1px solid #ccc;
+        }
+        .ref-table td {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+    </style>
+
+    <h3>Success Probability (S)</h3>
+    <table class="ref-table">
+        <tr><th>Range</th><th>Description</th></tr>
+        <tr><td>100–91</td><td>Perfect</td></tr>
+        <tr><td>90–81</td><td>Excellent</td></tr>
+        <tr><td>80–71</td><td>Very good</td></tr>
+        <tr><td>70–61</td><td>Satisfactory</td></tr>
+        <tr><td>60–51</td><td>Marginal</td></tr>
+        <tr><td>&lt; 50</td><td>Risky</td></tr>
+    </table>
+
+    <h3>Lifestyle Risk (R)</h3>
+    <table class="ref-table">
+        <tr><th>Range</th><th>Description</th></tr>
+        <tr><td>0</td><td>No</td></tr>
+        <tr><td>1–5</td><td>Slight</td></tr>
+        <tr><td>5–10</td><td>Moderate</td></tr>
+        <tr><td>10–15</td><td>High</td></tr>
+        <tr><td>15–20</td><td>Extreme</td></tr>
+    </table>
+
+    <h3>Critical Need Factor (C)</h3>
+    <table class="ref-table">
+        <tr><th>Value</th><th>Description</th></tr>
+        <tr><td>1.0</td><td>Over 5 years</td></tr>
+        <tr><td>1.1</td><td>1–5 years</td></tr>
+        <tr><td>1.2</td><td>6 months – 1 year</td></tr>
+        <tr><td>1.3</td><td>1–6 months</td></tr>
+        <tr><td>1.4</td><td>1 week – 1 month</td></tr>
+        <tr><td>1.5</td><td>1 day – 1 week</td></tr>
+        <tr><td>2.0</td><td>Within 24 hours</td></tr>
+    </table>
+
+    <h3>Quality of Life (Q)</h3>
+    <table class="ref-table">
+        <tr><th>Range</th><th>Description</th></tr>
+        <tr><td>1.00–0.91</td><td>Marathon runner</td></tr>
+        <tr><td>0.90–0.81</td><td>Active</td></tr>
+        <tr><td>0.80–0.61</td><td>Normal</td></tr>
+        <tr><td>0.60–0.51</td><td>Ambulatory</td></tr>
+        <tr><td>0.50–0.41</td><td>Disabled/Weak</td></tr>
+        <tr><td>&lt; 0.40</td><td>Bedridden</td></tr>
+    </table>
+
+</div>
+
+<!-- Footer -->
+<div style="text-align:center; margin-top: 20px; color:#555; font-size: 14px;">
+    <p>Created by <strong>Radheeka Weeraratne</strong>, 2026</p>
+</div>
+
+</body>
+</html>
